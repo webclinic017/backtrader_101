@@ -114,7 +114,8 @@ if __name__ == '__main__':
         # Do not pass values before this date
         fromdate=datetime.datetime(2000, 1, 1),
         # Do not pass values before this date
-        todate=datetime.datetime(2000, 12, 31),
+        # todate=datetime.datetime(2000, 12, 31),
+        todate=datetime.datetime(2001, 1, 3),
         # Do not pass values after this date
         reverse=False)
 
