@@ -9,7 +9,7 @@ import backtrader as bt
 # Create a Strategy
 class TestStrategy(bt.Strategy):
     params = (
-        ('exitbars', 5),
+        ('maperiod', 15),
     )
 
     def log(self, txt, dt=None):
@@ -25,6 +25,10 @@ class TestStrategy(bt.Strategy):
         self.order = None
         self.buyprice = None
         self.buycomm = None
+
+        # Add a MovingAverageSimple indicator
+        self.sma = bt.indicators.SimpleMovingAverage(
+            self.datas[0], period=self.params.maperiod)
 
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
@@ -77,22 +81,16 @@ class TestStrategy(bt.Strategy):
         if not self.position:
 
             # Not yet ... we MIGHT BUY if ...
-            if self.dataclose[0] < self.dataclose[-1]:
-                    # current close less than previous close
+            if self.dataclose[0] > self.sma[0]:
+                # BUY, BUY, BUY!!! (with all possible default parameters)
+                self.log('BUY CREATE, %.2f' % self.dataclose[0])
 
-                    if self.dataclose[-1] < self.dataclose[-2]:
-                        # previous close less than the previous close
-
-                        # BUY, BUY, BUY!!! (with default parameters)
-                        self.log('BUY CREATE, %.2f' % self.dataclose[0])
-
-                        # Keep track of the created order to avoid a 2nd order
-                        self.order = self.buy()
+                # Keep track of the created order to avoid a 2nd order
+                self.order = self.buy()
 
         else:
 
-            # Already in the market ... we might sell
-            if len(self) >= (self.bar_executed + self.params.exitbars):
+            if self.dataclose[0] < self.sma[0]:
                 # SELL, SELL, SELL!!! (with all possible default parameters)
                 self.log('SELL CREATE, %.2f' % self.dataclose[0])
 
@@ -105,7 +103,7 @@ if __name__ == '__main__':
     cerebro = bt.Cerebro()
 
     # Add a strategy
-    cerebro.addstrategy(TestStrategy, exitbars=7)
+    cerebro.addstrategy(TestStrategy)
 
     # Datas are in a subfolder of the samples. Need to find where the script is
     # because it could have been called from anywhere
@@ -127,7 +125,7 @@ if __name__ == '__main__':
     cerebro.adddata(data)
 
     # Set our desired cash start
-    cerebro.broker.setcash(100000.0)
+    cerebro.broker.setcash(1000.0)
 
     # Add a FixedSize sizer according to the stake，每次买10，所以在A股可以直接设100
     cerebro.addsizer(bt.sizers.FixedSize, stake=10)
