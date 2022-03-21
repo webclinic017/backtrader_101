@@ -6,8 +6,11 @@ import sys  # To find out the script name (in argv[0])
 import backtrader as bt
 
 
-# Create a Stratey
+# Create a Strategy
 class TestStrategy(bt.Strategy):
+    params = (
+        ('exitbars', 5),
+    )
 
     def log(self, txt, dt=None):
         ''' Logging function fot this strategy'''
@@ -18,7 +21,7 @@ class TestStrategy(bt.Strategy):
         # Keep a reference to the "close" line in the datas[0] dataseries
         self.dataclose = self.datas[0].close
 
-        # To keep track of pending orders
+        # To keep track of pending orders and buy price/commission
         self.order = None
         self.buyprice = None
         self.buycomm = None
@@ -33,16 +36,18 @@ class TestStrategy(bt.Strategy):
         if order.status in [order.Completed]:
             if order.isbuy():
                 self.log(
-                    'BUY EXECUTED, Price: %.2f, Cost: %.2f, Comm %.2f' %
-                    (order.executed.price,
+                    'BUY EXECUTED, Size: %d, Price: %.2f, Cost: %.2f, Comm %.2f' %
+                    (order.executed.size,
+                     order.executed.price,
                      order.executed.value,
                      order.executed.comm))
 
                 self.buyprice = order.executed.price
                 self.buycomm = order.executed.comm
-            elif order.issell():
-                self.log('SELL EXECUTED, Price: %.2f, Cost: %.2f, Comm %.2f' %
-                         (order.executed.price,
+            else:  # Sell
+                self.log('SELL EXECUTED, Size: %d, Price: %.2f, Cost: %.2f, Comm %.2f' %
+                         (order.executed.size,
+                          order.executed.price,
                           order.executed.value,
                           order.executed.comm))
 
@@ -51,7 +56,6 @@ class TestStrategy(bt.Strategy):
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
             self.log('Order Canceled/Margin/Rejected')
 
-        # Write down: no pending order
         self.order = None
 
     def notify_trade(self, trade):
@@ -74,21 +78,21 @@ class TestStrategy(bt.Strategy):
 
             # Not yet ... we MIGHT BUY if ...
             if self.dataclose[0] < self.dataclose[-1]:
-                # current close less than previous close
+                    # current close less than previous close
 
-                if self.dataclose[-1] < self.dataclose[-2]:
-                    # previous close less than the previous close
+                    if self.dataclose[-1] < self.dataclose[-2]:
+                        # previous close less than the previous close
 
-                    # BUY, BUY, BUY!!! (with default parameters)
-                    self.log('BUY CREATE, %.2f' % self.dataclose[0])
+                        # BUY, BUY, BUY!!! (with default parameters)
+                        self.log('BUY CREATE, %.2f' % self.dataclose[0])
 
-                    # Keep track of the created order to avoid a 2nd order
-                    self.order = self.buy()
+                        # Keep track of the created order to avoid a 2nd order
+                        self.order = self.buy()
 
         else:
 
             # Already in the market ... we might sell
-            if len(self) >= (self.bar_executed + 5):
+            if len(self) >= (self.bar_executed + self.params.exitbars):
                 # SELL, SELL, SELL!!! (with all possible default parameters)
                 self.log('SELL CREATE, %.2f' % self.dataclose[0])
 
@@ -101,7 +105,7 @@ if __name__ == '__main__':
     cerebro = bt.Cerebro()
 
     # Add a strategy
-    cerebro.addstrategy(TestStrategy)
+    cerebro.addstrategy(TestStrategy, exitbars=7)
 
     # Datas are in a subfolder of the samples. Need to find where the script is
     # because it could have been called from anywhere
@@ -114,8 +118,8 @@ if __name__ == '__main__':
         # Do not pass values before this date
         fromdate=datetime.datetime(2000, 1, 1),
         # Do not pass values before this date
-        # todate=datetime.datetime(2000, 12, 31),
-        todate=datetime.datetime(2001, 1, 3),
+        todate=datetime.datetime(2000, 12, 31),
+        # todate=datetime.datetime(2001, 1, 3),
         # Do not pass values after this date
         reverse=False)
 
@@ -124,6 +128,9 @@ if __name__ == '__main__':
 
     # Set our desired cash start
     cerebro.broker.setcash(100000.0)
+
+    # Add a FixedSize sizer according to the stake，每次买10，所以在A股可以直接设100
+    cerebro.addsizer(bt.sizers.FixedSize, stake=10)
 
     # Set the commission - 0.1% ... divide by 100 to remove the %
     cerebro.broker.setcommission(commission=0.001)
