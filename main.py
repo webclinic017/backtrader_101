@@ -20,6 +20,8 @@ class TestStrategy(bt.Strategy):
 
         # To keep track of pending orders
         self.order = None
+        self.buyprice = None
+        self.buycomm = None
 
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
@@ -30,9 +32,19 @@ class TestStrategy(bt.Strategy):
         # Attention: broker could reject order if not enough cash
         if order.status in [order.Completed]:
             if order.isbuy():
-                self.log('BUY EXECUTED, %.2f' % order.executed.price)
+                self.log(
+                    'BUY EXECUTED, Price: %.2f, Cost: %.2f, Comm %.2f' %
+                    (order.executed.price,
+                     order.executed.value,
+                     order.executed.comm))
+
+                self.buyprice = order.executed.price
+                self.buycomm = order.executed.comm
             elif order.issell():
-                self.log('SELL EXECUTED, %.2f' % order.executed.price)
+                self.log('SELL EXECUTED, Price: %.2f, Cost: %.2f, Comm %.2f' %
+                         (order.executed.price,
+                          order.executed.value,
+                          order.executed.comm))
 
             self.bar_executed = len(self)
 
@@ -41,6 +53,13 @@ class TestStrategy(bt.Strategy):
 
         # Write down: no pending order
         self.order = None
+
+    def notify_trade(self, trade):
+        if not trade.isclosed:
+            return
+
+        self.log('OPERATION PROFIT, GROSS %.2f, NET %.2f' %
+                 (trade.pnl, trade.pnlcomm))
 
     def next(self):
         # Simply log the closing price of the series from the reference
@@ -104,6 +123,9 @@ if __name__ == '__main__':
 
     # Set our desired cash start
     cerebro.broker.setcash(100000.0)
+
+    # Set the commission - 0.1% ... divide by 100 to remove the %
+    cerebro.broker.setcommission(commission=0.001)
 
     # Print out the starting conditions
     print('Starting Portfolio Value: %.2f' % cerebro.broker.getvalue())
