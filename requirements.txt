@@ -1,3 +1,4 @@
 pandas
 jqdatasdk
 backtrader
+backtrader[plotting]

@@ -2,13 +2,18 @@ attrs==21.4.0
 backtrader==1.9.76.123
 certifi==2021.10.8
 charset-normalizer==2.0.12
+cycler==0.11.0
+fonttools==4.31.1
 idna==3.3
 iniconfig==1.1.1
 jqdatasdk==1.8.10
+kiwisolver==1.4.0
+matplotlib==3.5.1
 msgpack==1.0.3
 numpy==1.22.3
 packaging==21.3
 pandas==1.4.1
+Pillow==9.0.1
 pluggy==1.0.0
 ply==3.11
 py==1.11.0
@@ -17,7 +22,7 @@ pyparsing==3.0.7
 pytest==7.1.1
 python-dateutil==2.8.2
 python-dotenv==0.19.2
-pytz==2021.3
+pytz==2022.1
 requests==2.27.1
 six==1.16.0
 SQLAlchemy==1.4.32
