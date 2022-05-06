@@ -42,9 +42,8 @@ class TestStrategy(bt.Strategy):
         if order.status in [order.Completed]:
             if order.isbuy():
                 self.log(
-                    'BUY EXECUTED, Size: %d, Price: %.2f, Cost: %.2f, Comm %.2f' %
-                    (order.executed.size,
-                     order.executed.price,
+                    'BUY EXECUTED, Price: %.2f, Cost: %.2f, Comm %.2f' %
+                    (order.executed.price,
                      order.executed.value,
                      order.executed.comm))
 
